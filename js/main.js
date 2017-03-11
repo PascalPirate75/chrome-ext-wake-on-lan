@@ -56,8 +56,9 @@ function split_data(v) {
 }
 
 function send() {
+  
 	status('initializing');
-
+	
 	var form = $$('form[name=settings]');
 	var shost = '0.0.0.0';
 	var dhost = form.host.value;
@@ -191,53 +192,225 @@ function paste_pass() {
 	return false;
 }
 
+
 /*
  * Storage logic.
  */
+ 
+var Computers = [];
+
 var settings_keys = [
-	'host',
-	'mac',
-	'pass',
-	'port',
+  'cNme',
 ];
 
-function load_settings() {
-	var storage = chrome.storage.local;
 
-	chrome.storage.local.get(settings_keys, function(settings) {
+
+
+/*
+ * Set form data based on selected computers settings.
+ * uses default if not avalible.
+ */
+function setForm(f) {
+  
 		var form = $$('form[name=settings]');
-		form.host.value = settings['host'] || '192.168.0.255';
-		form.port.value = settings['port'] || '40000';
+		form.cNme.value = Computers[f]['cNme'] || 'Add new computer';
+		form.host.value = Computers[f]['host'] || '192.168.0.255';
+		form.port.value = Computers[f]['port'] || '40000';
 		// We assume we only get called during init.
 		paste_mac();
-		form.mac.value = settings['mac'] || '20:00:00:00:00:00';
+		form.mac.value = Computers[f]['mac'] || '20:00:00:00:00:00';
 		paste_mac();
 		paste_pass();
-		form.pass.value = settings['pass'] || '00:00:00:00:00:00';
+		form.pass.value = Computers[f]['pass'] || '00:00:00:00:00:00';
 		paste_pass();
-	});
+		
 }
 
+
+/*
+ * Loads stored computer settings see
+ * function store_settings.
+ */
+function load_settings() {
+	
+	chrome.storage.local.get(settings_keys, function(settings) {
+
+	  if ("cNme" in settings)  {
+	    
+	    Computers = JSON.parse(settings['cNme']) || Computers;
+	    setForm(0);
+	    populateOptions();
+	  }
+	  
+	});
+	
+}
+
+
+/*
+ * Stores localy the computers and settings.
+ * changed how Mike Frysinger originaly saved
+ * data to acomidate me defisit undrstanding of
+ * parsing JSON format and the added computers.
+ * Used a single converted string attached to
+ * "cNam" key.  I am sure there is a better way.
+ */
 function store_settings() {
+  
 	var form = $$('form[name=settings]');
 	sync_mac();
 	sync_pass();
-	var settings = {
+	
+	var NodeSettings = {
+	  'cNme': form.cNme.value,
 		'host': form.host.value,
 		'mac': form.mac.value,
 		'pass': form.pass.value,
 		'port': form.port.value,
 	};
-	chrome.storage.local.set(settings);
+	
+	if (Computers.length > 0) {
+	  
+  	for (l = 0; l < Computers.length; l++)
+  	{
+  	  
+  	  if (Object.values(Computers[l]).indexOf(form.cNme.value) > -1) {
+  	    
+  	    Computers[l] = NodeSettings;
+  	    settings = JSON.stringify(Computers);
+        chrome.storage.local.set({'cNme':settings});
+  	    return false;
+  	    
+  	  }
+  	}
+    Computers.push(NodeSettings);
+	
+	} else {
+	  
+    Computers.push(NodeSettings);
+
+	}
+	
+  settings = JSON.stringify(Computers);
+	chrome.storage.local.set({'cNme':settings});
+	
+}
+
+
+
+/*
+ * Adds the options to the select then calls
+ * function so populate the form data
+ */
+function populateOptions() {
+  
+  opt = $$('select[name=cNme]');
+  opt.options.length = 0;
+
+  for (i = 0; i < Computers.length; i++) {
+    
+    var option = document.createElement("option");
+    option.text = Computers[i]['cNme'];
+    opt.add(option,i);
+    
+  }
+  opt.selectedIndex = 0;
+  setForm(0);
+}
+
+
+/*
+ * Function to deal with populatiing the form
+ * when a new slection is selected.
+ */
+function setConn() {
+  setForm($$('select[name=cNme]').selectedIndex);
+}
+
+
+
+/*
+ * Used to toggle new computer input box & slections
+ * visibility.
+ */
+function toggleField(hideObj,showObj){
+  
+  hideObj.disabled=true;
+  hideObj.style.display='none';
+  showObj.disabled=false;
+  showObj.style.display='inline';
+  showObj.focus();
+  
+}
+
+
+/*
+ * Del curent slected computer
+ */
+function delCmp() {
+  
+  s = $$('select[name=cNme]');
+  Computers.splice(s.selectedIndex, 1);
+  s.remove(s.selectedIndex);
+  setForm(0);
+  populateOptions();
+  store_settings();
+
+}
+
+  
+/*
+ * Shows an input box to enter new computer name.
+ */
+function setUpAddNode() {
+  
+  h = $$('input[name=newcNme]');
+  s = $$('select[name=cNme]');
+  toggleField(s, h);
+  
+}
+
+/*
+ * After new computer name is enterd hides input box and name
+ * sets the form up for new computer settings
+ */
+function addNode() {
+
+  h = $$('input[name=newcNme]');
+  s = $$('select[name=cNme]');
+  
+  toggleField(h, s);
+  var form = $$('form[name=settings]');
+  var option = document.createElement("option");
+  option.text = h.value;
+  
+  s.add(option,0);
+  s.selectedIndex='0';
+  h.value = ""
+  form.host.value = '192.168.0.255';
+	form.port.value = '40000';
+	paste_mac();
+	form.mac.value = '20:00:00:00:00:00';
+	paste_mac();
+	paste_pass();
+	form.pass.value = '00:00:00:00:00:00';
+	paste_pass();
+
 }
 
 /*
  * Startup.
  */
 window.onload = function() {
-	$$('form[name=settings]').onsubmit = send;
+  
+	$$('input[name=send]').onclick = send;
+	$$('input[name=newcNme]').onblur = addNode;
+	$$('select[name=cNme]').onchange = setConn;
 	$$('a[name=mac-paste]').onclick = paste_mac;
 	$$('a[name=pass-paste]').onclick = paste_pass;
+	$$('input[name=delBtn]').onclick = delCmp;
+	$$('input[name=addBtn]').onclick = setUpAddNode;
 
 	load_settings();
+	
 };
