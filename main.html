@@ -3,11 +3,12 @@
 <html>
 
 <head>
-<title>Wake-On-Lan (WOL)</title>
+<title>Wake-On-Lan 2 (WOL)</title>
 <script src='js/net_error_list.js'></script>
 <script src='js/common.js'></script>
 <script src='js/main.js'></script>
 <style>
+
 body {
 	background-color: black;
 	color: white;
@@ -19,13 +20,26 @@ input.mac {
 	text-align: center;
 }
 
+input[name=newcNme] {
+  width : 270px;
+}
+
+
 input[name=port] {
 	text-align: center;
 }
 
+
+
 a {
 	color: grey;
 }
+
+#compName {
+  width : 275px;
+}
+
+
 </style>
 </head>
 
@@ -33,13 +47,33 @@ a {
 
 <p class='header' style='text-align:center'>
  <a href='https://en.wikipedia.org/wiki/Wake-on-LAN' target='_blank'>
- Wake-On-Lan (WOL) Magic Packet Generator
+ Wake-On-Lan 2 (WOL) Magic Packet Generator
  </a>
 </p>
 
 <div class='settings'>
  <form name='settings'>
  <table width='100%'>
+  <tr>
+    <td>
+      Target Computer:
+    </td>
+    <td colspan=3>
+      
+        <select name='cNme' id="compName">
+            <!--<option value="customOption">[Enter New Computer]</option>-->
+          
+        </select><input name="newcNme" style="display:none;" disabled="disabled">
+
+    
+      <input type="button" name="addBtn" value="Add">
+      <input type="button" name="delBtn" value="Del">
+      <!--
+      <button name="delBtn">Del</button>
+      -->
+    </td>
+   
+  </tr>
   <tr>
    <td>
     <a href='https://en.wikipedia.org/wiki/IP_address' target='_blank'>IP</a>
@@ -95,7 +129,8 @@ a {
  </form>
 </div>
 
-<p class='status'>Status: <span name='status'>idle</span></p>
+<span class='status'>Status: <span name='status'>idle</span></span>
+<br/>
 
 <br>
 
